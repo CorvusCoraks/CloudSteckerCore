@@ -1,6 +1,7 @@
 import javax.swing.*;
 import java.io.*;
 import java.util.*;
+//import CloudStickerSwingUI;
 
 /**
  * Created by GreMal on 21.02.2015.
@@ -8,6 +9,7 @@ import java.util.*;
 public class Model {
     protected Map<String, String> iniData = new HashMap<String, String>();
     final private static String iniFileName = "cloudsticker.ini";
+    // Флаг готовности модели
     private boolean isReady = false;
     /* максимальное количество устройств в компании, включая и данное устройство.
     *  в связи с этим, в интерфейсе, в разделе "Компания" должно быть текстовых полей и кнопок,
@@ -25,6 +27,9 @@ public class Model {
 
 
     }
+
+    // Получить статус готовности модели
+    protected boolean getReady(){ return Controller.model.isReady; }
 
     /* Функция читает сохранённые настройки программы из соотеветствующего ini-файла в список Мэп*/
     protected void readInit() throws IOException
@@ -133,10 +138,14 @@ public class Model {
                         noteInfo.note = temp.getValue();
                     }
                     noteInfo.textArea = Controller.gui.getNoteTextArea();
-                    noteInfo.textArea.setText(noteInfo.note);
+                    noteInfo.textArea.setSText(noteInfo.note);
+
                     // раздача кнопок и текстовых полей устройствам
-                    JButton[] buttons = Controller.gui.getOtherCircleDevicesButton();
-                    JTextField[] textFields = Controller.gui.getOtherCircleDevicesTextField();
+                    //JButton[] buttons = Controller.gui.getOtherCircleDevicesButton();
+                    //JTextField[] textFields = Controller.gui.getOtherCircleDevicesTextField();
+                    AbstractUIControl[] buttons = Controller.gui.getOtherCircleDevicesButton();
+                    AbstractUIControl[] textFields = Controller.gui.getOtherCircleDevicesTextField();
+
                     int i = 0;
                     //System.out.println("Начинаем раздачу полей и кнопок.");
                     for (DeviceInfo info : (DeviceInfo[]) internetAnswer.content) {
@@ -144,15 +153,15 @@ public class Model {
                             // текущему устройству
                             info.textField = Controller.gui.getThisDeviceTextField();
                             info.button = Controller.gui.getThisDeviceButton();
-                            info.textField.setText(info.deviceLabel);
+                            info.textField.setSText(info.deviceLabel);
                             //gui.setThisDeviceLable(info.deviceLabel);
                             //System.out.println("Это устройство получило.");
                         } else {
                             // другим устройствам
                             info.textField = textFields[i];
                             info.button = buttons[i];
-                            info.textField.setText(info.deviceLabel);
-                            info.button.setText(Controller.gui.localisation.get("btKickFromCircle"));
+                            info.textField.setSText(info.deviceLabel);
+                            info.button.setSText(Controller.gui.getLocalisationValueByKey("btKickFromCircle"));
                             //System.out.println(String.format("Устройство №%d получило.", i));
                             i++;
                         }
@@ -202,7 +211,7 @@ public class Model {
             getInitialisationDataFromDB();
             DeviceInfo device = devicesInCircle.get(iniData.get("deviceID"));
             device.deviceLabel = thisDeviceLabel; // восстанавливаем метку устройства
-            device.textField.setText(thisDeviceLabel); // Выводим старую метку устройства в текстовое поле.
+            device.textField.setSText(thisDeviceLabel); // Выводим старую метку устройства в текстовое поле.
             device.labelWasChanged = true; // чтобы метка синхронизировалась на сервер
             device.labelTimeStamp = new Date(); // чтобы метка синхронизировалась на сервер
             Controller.gui.clearFreeTextField();
@@ -218,7 +227,7 @@ public class Model {
 
         // Синхронизация заметки
         if(noteInfo.noteWasChanged){
-            noteInfo.note = Controller.gui.getNoteTextArea().getText();
+            noteInfo.note = Controller.gui.getNoteTextArea().getSText();
             noteInfo.noteTimeStamp = new Date();
             noteInfo.noteWasChanged = false;
         }
@@ -241,7 +250,7 @@ public class Model {
             }
             noteInfo.noteTimeStamp = mapTimeStamps.get(iniData.get("userID"));
             noteInfo.note = ((Map<Date, String>) answer.content).get(noteInfo.noteTimeStamp);
-            noteInfo.textArea.setText(noteInfo.note);
+            noteInfo.textArea.setSText(noteInfo.note);
         }else{ /* = 0 -> ничего не делаем */ }
 
         //tempMap = Internet.getAllDevicesInfoMap(iniData.get("userID"), iniData.get("deviceID"));
@@ -259,7 +268,7 @@ public class Model {
                 if (!mapTimeStamps.containsKey(pair.getKey())) {
                     // удалить из клиенетского списка данное устройство, так как его нет на сервере
                     // новые устройства попадают в devicesInCircle только через сервер
-                    pair.getValue().textField.setText(""); // очищаем текстовое поле удалённого устройства
+                    pair.getValue().textField.setSText(""); // очищаем текстовое поле удалённого устройства
                     Controller.gui.invertTextOnButton(pair.getValue().button); // инвертируем надпись на кнопке
                     continue;
                 }
@@ -286,7 +295,7 @@ public class Model {
             if(!pair.getKey().equals(iniData.get("userID"))) {
                 DeviceInfo device = devicesInCircle.get(pair.getKey());
                 if (device.labelWasChanged) {
-                    device.deviceLabel = device.textField.getText();
+                    device.deviceLabel = device.textField.getSText();
                     device.labelTimeStamp = new Date();
                     device.labelWasChanged = false;
                 }
@@ -297,12 +306,12 @@ public class Model {
                     // TimeStamp меньше у клиента, обновляем данные у клиента
                     device.labelTimeStamp = ((Map<String, DeviceInfo>) answer.content).get(pair.getKey()).labelTimeStamp;
                     device.deviceLabel = ((Map<String, DeviceInfo>) answer.content).get(pair.getKey()).deviceLabel;
-                    device.textField.setText(device.deviceLabel);
+                    device.textField.setSText(device.deviceLabel);
                 } else { /* = 0 -> либо метка не менялась нигде, либо только что скачали данные по новому устройству круга */
                     if(device.textField == null){
                         /* если текстовое поле null, значит это точно - новое устройство */
                         device.textField = Controller.gui.getFreeOtherDeviceTextField(); // Получаем в GUI свободное текстовое поле
-                        device.textField.setText(device.deviceLabel); // обновляем текст в текстовом поле
+                        device.textField.setSText(device.deviceLabel); // обновляем текст в текстовом поле
                         device.button = Controller.gui.getButtonByTextField(device.textField); // получаем парную кнопку
                         Controller.gui.invertTextOnButton(device.button); // инвертируем надпись на кнопке
                         //Controller.gui.clearFreeTextField(); // и очищаем (на всякий случай) свободные текстовые поля устройств круга
@@ -328,14 +337,17 @@ public class Model {
         }
     }
 
-    protected synchronized void InviteOrKickButtonPressed(JButton button){
+    // вызывается из UI
+    protected synchronized void InviteOrKickButtonPressed(AbstractUIControl button){
         if(!isReady){ return; } // модель ещё не готова
         if(!isInternerConnectionActive()){ return; }
         Internet.Result answer;
         // временный мэп, в котом легче искать по кнопкам среди устройств круга. Ключ - кнопка
-        Map<JButton, DeviceInfo> buttonKey = new HashMap<JButton, DeviceInfo>();
+        // Map<JButton, DeviceInfo> buttonKey = new HashMap<JButton, DeviceInfo>();
+        Map<AbstractUIControl, DeviceInfo> buttonKey = new HashMap<AbstractUIControl, DeviceInfo>();
         // временный мэп, в котом легче искать по текстовым полям среди устройств круга. Ключ - текстовое поле
-        Map<JTextField, DeviceInfo> textfieldKey = new HashMap<JTextField,DeviceInfo>();
+        Map<AbstractUIControl, DeviceInfo> textfieldKey = new HashMap<AbstractUIControl,DeviceInfo>();
+        //Map<JTextField, DeviceInfo> textfieldKey = new HashMap<JTextField,DeviceInfo>();
         for(Map.Entry<String, DeviceInfo> pair : devicesInCircle.entrySet()){
             DeviceInfo value = pair.getValue();
             buttonKey.put(value.button, value);
@@ -354,7 +366,7 @@ public class Model {
             }
             //textfieldKey.remove(buttonKey.get(button).textField); // удаление из вспомогательной карты
             //DeviceInfo device = buttonKey.get(button);
-            buttonKey.get(button).textField.setText(""); // очистка поля с меткой устройства
+            buttonKey.get(button).textField.setSText(""); // очистка поля с меткой устройства
             Controller.gui.invertTextOnButton(button); // инвертирование надписи на кнопке
             devicesInCircle.remove(buttonKey.get(button).deviceId); // удалить устройство из списка на клиенте
             //buttonKey.remove(button); // удалить из вспомогательной карты
@@ -363,9 +375,10 @@ public class Model {
 
         // Данная кнопка не принадлежит устройства, значит - приглашение.
         // Очищаем все поля, которые не принадлежат какому либо устройству (удаляем дублирующий пароль)
-        JTextField[] textFieldsInGui = Controller.gui.getOtherCircleDevicesTextField();
+        // JTextField[] textFieldsInGui = Controller.gui.getOtherCircleDevicesTextField();
+        AbstractUIControl[] textFieldsInGui = Controller.gui.getOtherCircleDevicesTextField();
         for(int i = 0; i < textFieldsInGui.length; i++){
-            if(!textfieldKey.containsKey(textFieldsInGui[i])){ textFieldsInGui[i].setText(""); }
+            if(!textfieldKey.containsKey(textFieldsInGui[i])){ textFieldsInGui[i].setSText(""); }
         }
         // Генерируем пароль.
         String newPass = Tools.generate5DigitPass();
@@ -376,15 +389,16 @@ public class Model {
             return;
         }
         // Вывести в строку GUI пароль
-        JTextField tf = Controller.gui.getTextPaired(button);
-        tf.setText(newPass);
+        // JTextField tf = Controller.gui.getTextPaired(button);
+        AbstractUIControl tf = Controller.gui.getTextPaired(button);
+        tf.setSText(newPass);
     }
 
     /* Это происходит, если нажата кнопка "войти в круг" */
     protected synchronized void EnterToCircleButtonPressed(){
         if(!isReady){ return; } // модель ещё не готова
         if(!isInternerConnectionActive()){ return; }
-        String password = Controller.gui.getInvitationTextField().getText();
+        String password = Controller.gui.getInvitationTextField().getSText();
         // если длина пароля ноль или больше допустимого
         if((password.length() == 0)||(password.length() > Controller.CHARS_IN_INVITATION_PASS)){ return; }
         // если в поле пароля введены не числа
@@ -398,7 +412,7 @@ public class Model {
             /* Если неудачная попытка вступить в круг (не важно по какой причине), просто выходим из этой функции,
             оставляя старые параметры заметки.
             Хотя, обязательно надо уведомить о событии пользователя. */
-            Controller.gui.putNewStatusInStatusString(GUI.StatusSender.ENTER_TO_CIRCLE, "Couldn't enter to circle.", 5);
+            Controller.gui.putNewStatusInStatusString(StatusSender.ENTER_TO_CIRCLE, "Couldn't enter to circle.", 5);
             connectionErrorHandler(answer.dbStatus, "Получение userID круга, куда вступаем.");
             return;
         }
@@ -438,17 +452,27 @@ public class Model {
     }
 
     /* ****************************************************************************/
-    /* Интерфейсные функции, чтобы GUI мог получить необходимые данные из модели. */
+    /* Интерфейсные функции, чтобы GUI мог получить необходимые данные из модели.
+    * Перенести всё в CoreSide */
     /* ****************************************************************************/
     /* провека данного текстового поля на занятость */
-    protected boolean isTextFieldFree(JTextField jtf){
+    protected boolean isTextFieldFree(AbstractUIControl textField){
+        if(!isReady){ return false; } // модель ещё не готова
+
+        for(Map.Entry<String, DeviceInfo> pair : devicesInCircle.entrySet()){
+            if(pair.getValue().textField == null){ continue; }
+            if(pair.getValue().textField == textField){ return false; }
+        }
+        return true;
+    }
+    /*protected boolean isTextFieldFree(JTextField jtf){
         if(!isReady){ return false; } // модель ещё не готова
         for(Map.Entry<String, DeviceInfo> pair : devicesInCircle.entrySet()){
             if(pair.getValue().textField == null){ continue; }
             if(pair.getValue().textField == jtf){ return false; }
         }
         return true;
-    }
+    }*/
     //protected NoteInfo getNoteInfo(){return noteInfo;}
     //protected Map<String, DeviceInfo> getDevicesInCircle(){return devicesInCircle;}
     protected synchronized void setNoteWasChangedFlagToTrue(){
@@ -459,17 +483,24 @@ public class Model {
         //noteInfo.note = noteInfo.textArea.getText();
     }
     //protected void setThisDeviceLabelWasChangedFlagToTrue(){ devicesInCircle.get(iniData.get("deviceID")).labelWasChanged = true; }
-    protected synchronized void setDeviceLabelWasChangedFlagToTrue(JTextField textField){
+    protected synchronized void setDeviceLabelWasChangedFlagToTrue(AbstractUIControl textField){
         if(!isReady){ return; } // модель ещё не готова
         for (Map.Entry<String, DeviceInfo> info : devicesInCircle.entrySet()) {
             if (info.getValue().textField == textField) {
                 info.getValue().labelWasChanged = true;
-                //info.getValue().deviceLabel = info.getValue().textField.getText();
                 return;
             }
         }
     }
-
+    /*protected synchronized void setDeviceLabelWasChangedFlagToTrue(JTextField textField){
+        if(!isReady){ return; } // модель ещё не готова
+        for (Map.Entry<String, DeviceInfo> info : devicesInCircle.entrySet()) {
+            if (info.getValue().textField == textField) {
+                info.getValue().labelWasChanged = true;
+                return;
+            }
+        }
+    }*/
 
     // вспомогательный класс. Содержит информацию об устройстве входящим в круг.
     protected static class DeviceInfo{
@@ -482,8 +513,10 @@ public class Model {
         * TimeStamp будет изменён непосредственно перед синхронизацией, согласно состояния флага WasChahged
         * Необходимость синхронизации данного поля будет решаться исключительно из сравнения TimeStamp */
 
-        protected JTextField textField;
-        protected JButton button;
+        AbstractUIControl textField;
+        AbstractUIControl button;
+        // protected JTextField textField;
+        // protected JButton button;
 
         protected DeviceInfo(String deviceId, String deviceLabel, Date labelTimeStamp){
             this.deviceId = deviceId;
@@ -514,7 +547,8 @@ public class Model {
         * TimeStamp будет изменён непосредственно перед синхронизацией, согласно состояния флага WasChahged
         * Необходимость синхронизации данного поля будет решаться исключительно из сравнения TimeStamp */
 
-        protected JTextArea textArea;
+        //protected JTextArea textArea;
+        protected AbstractUIControl textArea;
         //protected JButton button;
     }
 
@@ -545,6 +579,18 @@ public class Model {
 
     // равна ли метка устройства в модели содержимому соответствующего текстового поля
     // Функция может показать, производились ли изменения с данным полем
+    protected boolean isDeviceLabelEquals(AbstractUIControl auic){
+        if(!isReady){ return false; } // модель ещё не готова
+        for(Map.Entry<String, DeviceInfo> pair : devicesInCircle.entrySet()){
+            if(pair.getValue().textField == auic) {
+                if (pair.getValue().deviceLabel.equals(auic.getSText())) {
+                    return true;
+                }else{ break; }
+            }
+        }
+        return false;
+    }
+/*
     protected boolean isDeviceLabelEquals(JTextField jtf){
         if(!isReady){ return false; } // модель ещё не готова
         for(Map.Entry<String, DeviceInfo> pair : devicesInCircle.entrySet()){
@@ -556,6 +602,7 @@ public class Model {
         }
         return false;
     }
+*/
     /* возвращает временный массив статусов (когда GUI уже сформирован */
 /*    protected static Map<GUI.StatusSender, GUI.StatusStringObject> getLasyStatusForGui(){
         Map<GUI.StatusSender, GUI.StatusStringObject> tempMap = new HashMap<GUI.StatusSender, GUI.StatusStringObject>(lazyStatusForGui);

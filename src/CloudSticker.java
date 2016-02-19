@@ -6,9 +6,9 @@ public class CloudSticker {
     {
         Controller controller = new Controller();
         //GUI gui = new GUI();
-
-
     }
-
+/*
+* TODO Сделать интерфейсы для UI
+* */
 
 }
