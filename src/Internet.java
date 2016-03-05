@@ -758,7 +758,8 @@ class TestInternetConnectionThread extends Thread
         while(gui != null) {
             //System.out.println(String.format("Проверка наличия несинхронизированных данных - %s", Controller.model.isWasChangedTrue()));
             // Тестируем связь, только если есть несинхронизированные данные
-            if(Controller.model.isWasChangedTrue()) {
+            //if(Controller.model.isWasChangedTrue()) {
+            if(gui.getIsNoteWasChanged()||gui.getIsDeveceLabelWasChanged()){
                 //System.out.println("Тестируем соединение.");
                 this.controller.testConnection();
             }

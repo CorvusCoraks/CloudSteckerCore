@@ -6,10 +6,12 @@ import javax.swing.*;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InterruptedIOException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.logging.FileHandler;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
@@ -118,6 +120,7 @@ public class Controller {
             public void run() {
                 //handler.publish(new LogRecord(LOG_LEVEL, "Controller.run. GUI {: " + gui.toString()));
                 gui = new GUI();
+                if (gui == null){ /* todo сделать выдачу предупреждающего окна */return; }
                 handler.publish(new LogRecord(LOG_LEVEL, "Controller.run. GUI }: " + gui.toString()));
             }
         });
@@ -128,6 +131,59 @@ public class Controller {
         while (!gui.getReady()) { Thread.sleep(10); }
         handler.publish(new LogRecord(LOG_LEVEL, "Controller.main. GUI: "+gui.toString()));
 
+        // запуск нити, которая будет контролировать состояние флагов UI
+        new Thread(){
+            @Override
+            public void run(){
+                //super.run();
+                try {
+                    while (!gui.isCloseWindowCommand()) {
+                        CommunicationChannal channal;
+                        // Проверка флагов и соответствующая реакция на них
+                        if(gui.getJerkThreadWakeUpCommand()){Controller.jerkThread.controller.wakeUp();}
+                        else{Controller.jerkThread.controller.pause();}
+                        if(gui.isEnterToCircleButtonPressed()){
+                            model.EnterToCircleButtonPressed();
+                            gui.CoreOK_EnterToCircleButtonPressed();
+                        }
+                        if(gui.isStartSynchronizationCommand()){
+                            model.startSynchronization();
+                            gui.CoreOK_StartSynchronizationCommand();
+                        }
+                        AbstractUIControl InviteOrKickButton = gui.InviteOrKickButtonPressed();
+                        if(InviteOrKickButton != null){
+                            //model.startSynchronization();
+                            Controller.model.InviteOrKickButtonPressed(InviteOrKickButton);
+                            gui.CoreOK_InviteOrKickButtonPressed();
+                        }
+                        /* todo получение сигнала об изменении метки устройства */
+                        /* todo получение сигнала об изменении заметки */
+                        /* todo получение сигнала на выдачу массива со ссылками занятых текстовых полей */
+
+                        sleep(10);
+                    }
+                    if(gui.isCloseWindowCommand()){
+                        // Дана команда на закрытие приложения
+                        model.startSynchronization();
+                        model.writeInit();
+                        gui.setUIPaused(false);
+                    }
+                }catch (InterruptedException ignore){/* NOP */}
+            }
+        }.start();
+
+        /*
+        {
+            @Override
+            public void run(){
+                while (!isCloseWindowCommand){
+                    try {
+                        this.sleep(10);
+                    }catch (InterruptedIOException ignore ){}
+}
+}
+        }
+        */
         // инициализация данных
         handler.publish(new LogRecord(LOG_LEVEL, "Controller.Next. Model.Initialisation."));
         model.initialization();
@@ -194,6 +250,4 @@ public class Controller {
 
         handler.close();
     }
-
-
 }
