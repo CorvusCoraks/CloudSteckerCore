@@ -2,6 +2,9 @@
  * Created by GreMal on 21.02.2015.
  */
 
+import ru.gremal.cs.common.tools.InternetConnectionMessage;
+import ru.gremal.cs.common.tools.CommonTools;
+
 import javax.swing.*;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -64,7 +67,7 @@ public class Controller {
         handler = new FileHandler(LOGFILE_PATTERN, LOGFILE_SIZE, LOGFILES_NUMBER, LOGFILE_APPEND);
         handler.setFormatter(new SimpleFormatter());
         handler.setLevel(LOG_TRIGGER);
-        handler.publish(new LogRecord(LOG_LEVEL, "Input in Controller.main"));
+        handler.publish(new LogRecord(LOG_LEVEL, new StringBuilder(getPackage()).append().append().append("Input in Controller.main").toString()));
 
         // обновление файла start.jar
         File oldStartFile = new File("./Start.jar");
@@ -85,7 +88,7 @@ public class Controller {
             if (!argsList.contains("start")) {
                 //System.out.println("внтутри Контроллера");
             /* ------------------------------------------------------------- */
-                Process proc = Runtime.getRuntime().exec("java -jar Start.jar");
+                //Process proc = Runtime.getRuntime().exec("java -jar Start.jar");
                 return;
             /* ------------------------------------------------------------- */
             }
@@ -116,62 +119,22 @@ public class Controller {
         handler.publish(new LogRecord(LOG_LEVEL, "Controller. gui: " + gui));
         // handler.publish(new LogRecord(LOG_LEVEL, "Controller. GUI class: " + GUI.class.toString()));
         // запуск GUI
+        // Process uiProc = Runtime.getRuntime().exec("java -jar UI.jar ");
+
         SwingUtilities.invokeLater(new Runnable() {
             public void run() {
-                //handler.publish(new LogRecord(LOG_LEVEL, "Controller.run. GUI {: " + gui.toString()));
-                gui = new GUI();
-                if (gui == null){ /* todo сделать выдачу предупреждающего окна */return; }
-                handler.publish(new LogRecord(LOG_LEVEL, "Controller.run. GUI }: " + gui.toString()));
+                gui = new GUI(new CoreSideImplementation());
+                // todo сделать выдачу предупреждающего окна
+                if (gui == null){ /* todo сделать выдачу предупреждающего окна */ return; }
             }
         });
 
         // Задержка, чтобы позволить GUI полностью сформироваться до инициализации модели
         handler.publish(new LogRecord(LOG_LEVEL, "Controller.Next. Wait GUI Ready. Gui: " + gui));
-        while (gui == null) { Thread.sleep(10); }
-        while (!gui.getReady()) { Thread.sleep(10); }
+        while (gui == null) { Thread.sleep(CommonTools.SLEEP_INTERVAL); }
+        while (!gui.getReady()) { Thread.sleep(CommonTools.SLEEP_INTERVAL); }
         handler.publish(new LogRecord(LOG_LEVEL, "Controller.main. GUI: "+gui.toString()));
-
-        // запуск нити, которая будет контролировать состояние флагов UI
-        new Thread(){
-            @Override
-            public void run(){
-                //super.run();
-                try {
-                    while (!gui.isCloseWindowCommand()) {
-                        CommunicationChannal channal;
-                        // Проверка флагов и соответствующая реакция на них
-                        if(gui.getJerkThreadWakeUpCommand()){Controller.jerkThread.controller.wakeUp();}
-                        else{Controller.jerkThread.controller.pause();}
-                        if(gui.isEnterToCircleButtonPressed()){
-                            model.EnterToCircleButtonPressed();
-                            gui.CoreOK_EnterToCircleButtonPressed();
-                        }
-                        if(gui.isStartSynchronizationCommand()){
-                            model.startSynchronization();
-                            gui.CoreOK_StartSynchronizationCommand();
-                        }
-                        AbstractUIControl InviteOrKickButton = gui.InviteOrKickButtonPressed();
-                        if(InviteOrKickButton != null){
-                            //model.startSynchronization();
-                            Controller.model.InviteOrKickButtonPressed(InviteOrKickButton);
-                            gui.CoreOK_InviteOrKickButtonPressed();
-                        }
-                        /* todo получение сигнала об изменении метки устройства */
-                        /* todo получение сигнала об изменении заметки */
-                        /* todo получение сигнала на выдачу массива со ссылками занятых текстовых полей */
-
-                        sleep(10);
-                    }
-                    if(gui.isCloseWindowCommand()){
-                        // Дана команда на закрытие приложения
-                        model.startSynchronization();
-                        model.writeInit();
-                        gui.setUIPaused(false);
-                    }
-                }catch (InterruptedException ignore){/* NOP */}
-            }
-        }.start();
-
+        int temp = CommonTools.SLEEP_INTERVAL;
         /*
         {
             @Override
@@ -219,7 +182,7 @@ public class Controller {
 
         // Скачивание обновлённой версии
         if (isStartFilePresent) {
-            if (InternetConnectionTest.isCloudReachable() == InternetConnectionTest.InternetConnectionMessage.YES) {
+            if (InternetConnectionTest.isCloudReachable() == InternetConnectionMessage.YES) {
                 boolean isRefreshNeeded = false;
                 Internet.Result answer = Internet.getLastProgramVer();
                 float ver = Float.parseFloat((String) answer.content);
@@ -238,7 +201,7 @@ public class Controller {
         }
 
         // Передача статистики
-        if(InternetConnectionTest.isCloudReachable() == InternetConnectionTest.InternetConnectionMessage.YES) {
+        if(InternetConnectionTest.isCloudReachable() == InternetConnectionMessage.YES) {
             Map<String, String> hash = new HashMap<String, String>();
             hash.put("os", OS_NAME);
             Internet.Result answer = Internet.sendStatistics(hash);

@@ -60,21 +60,7 @@ public class Tools {
         return result;
     }
 
-    /* функция чтения в Map данных из ini-файла */
-    protected static Map<String, String> readFromIniFile(String fileName) throws FileNotFoundException, IOException{
-        Map<String, String> map = new HashMap<String, String>();
 
-        BufferedReader reader = new BufferedReader(new FileReader(fileName));
-        String str = "";
-        while((str = reader.readLine()) != null){
-            String[] temp = str.split("=");
-            if(temp.length == 0){ continue; } // строку не удалось разбить на две части.
-            map.put(temp[0].trim(), temp[1].trim());
-        }
-        reader.close();
-
-        return map;
-    }
 
     /* Функции работы со временем.
      * Так как время Date() выдаётся в миллисекундах от чего-то там 1970 года, то, логично говоря, это UTC (GMT).

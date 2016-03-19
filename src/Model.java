@@ -1,3 +1,7 @@
+import ru.gremal.cs.common.tools.InternetConnectionMessage;
+import ru.gremal.cs.common.tools.StatusSender;
+import ru.gremal.cs.common.ui.AbstractUIControl;
+import ru.gremal.cs.common.tools.CommonTools;
 import javax.swing.*;
 import java.io.*;
 import java.util.*;
@@ -42,7 +46,8 @@ public class Model {
             myFile.createNewFile();
             // Новый файл сохраняется на уровень выше в структуру каталогов. Почему?
         }
-        iniData = Tools.readFromIniFile(iniFileName);
+        //iniData = Tools.readFromIniFile(iniFileName);
+        iniData = CommonTools.readFromIniFile(iniFileName);
     }
 
     /*
@@ -185,7 +190,7 @@ public class Model {
     }
 
     /* Фукция синхронизации заметки, меток устройств и всего прочего, что нужно синхронизировать. */
-    protected synchronized void startSynchronization(){
+    protected synchronized void startSynchronization()throws InterruptedException{
         /*-------------------*/
 /*        {
             String text = noteInfo.textArea.getText();
@@ -214,6 +219,7 @@ public class Model {
             device.textField.setSText(thisDeviceLabel); // Выводим старую метку устройства в текстовое поле.
             device.labelWasChanged = true; // чтобы метка синхронизировалась на сервер
             device.labelTimeStamp = new Date(); // чтобы метка синхронизировалась на сервер
+            //Controller.gui.clearFreeTextField();
             Controller.gui.clearFreeTextField();
             answer = Internet.getTimeStamps(iniData.get("userID"), iniData.get("deviceID"), isSynchronisation);
             // return;
@@ -554,9 +560,11 @@ public class Model {
 
     /* проверка интернет соединения. */
     private boolean isInternerConnectionActive(){
-        InternetConnectionTest.InternetConnectionMessage message = InternetConnectionTest.isCloudReachable();
+        // InternetConnectionTest.InternetConnectionMessage message = InternetConnectionTest.isCloudReachable();
+        InternetConnectionMessage message = InternetConnectionTest.isCloudReachable();
         Controller.gui.setInternetConnectionStatuses(message);
-        if(message == InternetConnectionTest.InternetConnectionMessage.YES){ return true; }
+        //if(message == InternetConnectionTest.InternetConnectionMessage.YES){ return true; }
+        if(message == InternetConnectionMessage.YES){ return true; }
         return false;
     }
 

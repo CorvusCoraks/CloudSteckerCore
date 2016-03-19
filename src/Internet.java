@@ -1,6 +1,8 @@
 /**
  * Created by GreMal on 22.02.2015.
  */
+import ru.gremal.cs.common.tools.InternetConnectionMessage;
+
 import java.io.*;
 import java.net.*;
 import java.nio.charset.Charset;
@@ -646,14 +648,14 @@ class InternetConnectionTest{
         }
         return InternetConnectionMessage.YES;
     }
-
+/*
     // статусные сообщения проверки связи
     protected enum InternetConnectionMessage{
         YES, // связь Ок - облако доступно.
         NO, // Доступа в интернет нет (оба сайта недоступны)
         CLOUD_NOT_FOUND // Облако недоступно (первый доступен, второй - нет)
     }
-
+*/
     /* Пинг. Функция сигнализирует, доступно ли облако с этого устройства. Используется для проверки доступа в Интернет,
      * например. Для теста используются несколько, хостов */
     private static boolean isCloudReachable(String urlString){
@@ -758,8 +760,8 @@ class TestInternetConnectionThread extends Thread
         while(gui != null) {
             //System.out.println(String.format("Проверка наличия несинхронизированных данных - %s", Controller.model.isWasChangedTrue()));
             // Тестируем связь, только если есть несинхронизированные данные
-            //if(Controller.model.isWasChangedTrue()) {
-            if(gui.getIsNoteWasChanged()||gui.getIsDeveceLabelWasChanged()){
+            if(Controller.model.isWasChangedTrue()) {
+            //if(gui.getIsNoteWasChanged()||gui.getIsDeveceLabelWasChanged()){
                 //System.out.println("Тестируем соединение.");
                 this.controller.testConnection();
             }
@@ -783,12 +785,12 @@ class TestInternetConnectionThread extends Thread
 
 class TestController{
     // статус процесса тестирования связи
-    volatile boolean isPause = false;
+    private volatile boolean isPause = false;
 
     // собственно, функция, которая вызывает продпрограмму тестирования
     synchronized protected void testConnection(){
         // Раскомметировать для реального запуска тестирования связи
-        InternetConnectionTest.InternetConnectionMessage message = InternetConnectionTest.isCloudReachable();
+        InternetConnectionMessage message = InternetConnectionTest.isCloudReachable();
         // если только gui уже готов для работы, тогда и заполняем статусное сообщение.
         if(Controller.gui != null) {
             if (Controller.gui.getReady()) {
@@ -812,5 +814,7 @@ class TestController{
     }
 
     // остановить процесс тестирования. Выключатель.
-    synchronized void pause(){ this.isPause = true; }
+    synchronized protected void pause(){ this.isPause = true; }
+
+    synchronized protected boolean isPause(){return this.isPause;}
 }
